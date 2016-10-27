@@ -25,12 +25,21 @@ class Canvas(object):
         return self._matrix[x][y]
 
     def horizontal_line(self, x1, x2, y):
+        """
+        Returns the list of points between (x1, y) and (x2, y)
+        """
         return [self.point(x, y) for x in (xrange(x1, x2 + 1) if x2 >= x1 else xrange(x2, x1 + 1))]
 
     def vertical_line(self, x, y1, y2):
+        """
+        Returns the list of points between (x, y1) and (x, y2)
+        """
         return [self.point(x, y) for y in (xrange(y1, y2 + 1) if y2 >= y1 else xrange(y2, y1 + 1))]
 
     def connected(self, x, y):
+        """
+        Returns the set of points of the area connected to (x, y)
+        """
         def func(color, visited, linked, x1, y1):
             try:
                 point = self.point(x1, y1)
@@ -57,6 +66,7 @@ class PointFactory(object):
         self.palette = palette
 
     def create_point(self, x, y):
+        """Creates a new point"""
         return Point(x, y, self.default_color, palette=self.palette)
 
 
@@ -91,19 +101,31 @@ class Painter(object):
         self._canvas = canvas
 
     def draw_horizontal_line(self, x1, x2, y, color):
+        """
+        Paints the line between (x1, y) and (x2, y)
+        """
         for point in self._canvas.horizontal_line(x1=x1, x2=x2, y=y):
             point.color = color
 
     def draw_vertical_line(self, x, y1, y2, color):
+        """
+        Paints the line between (x, y1) and (x, y2)
+        """
         for point in self._canvas.vertical_line(x=x, y1=y1, y2=y2):
             point.color = color
 
     def draw_rectangle(self, x1, y1, x2, y2, color):
+        """
+        Paints the border of the rectangle with corners in (x1, y1) and (x2, y2)
+        """
         self.draw_horizontal_line(x1=x1, x2=x2, y=y1, color=color)
         self.draw_horizontal_line(x1=x1, x2=x2, y=y2, color=color)
         self.draw_vertical_line(x=x1, y1=y1, y2=y2, color=color)
         self.draw_vertical_line(x=x2, y1=y1, y2=y2, color=color)
 
     def bucket_fill(self, x, y, color):
+        """
+        Paints the area connected to (x, y)
+        """
         for point in self._canvas.connected(x=x, y=y):
             point.color = color
