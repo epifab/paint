@@ -14,6 +14,12 @@ class Canvas(object):
         except IndexError:
             raise PointOutOfCanvas("Point out of canvas")
 
+    def horizontal_line(self, x1, x2, y):
+        return [self.point(x, y) for x in (xrange(x1, x2 + 1) if x2 >= x1 else xrange(x2, x1 + 1))]
+
+    def vertical_line(self, x, y1, y2):
+        return [self.point(x, y) for y in (xrange(y1, y2 + 1) if y2 >= y1 else xrange(y2, y1 + 1))]
+
 
 class PointFactory(object):
     def __init__(self, default_color, palette):
@@ -49,3 +55,22 @@ class Point(object):
     @property
     def y(self):
         return self._y
+
+
+class Painter(object):
+    def __init__(self, canvas):
+        self._canvas = canvas
+
+    def draw_horizontal_line(self, x1, x2, y, color):
+        for point in self._canvas.horizontal_line(x1=x1, x2=x2, y=y):
+            point.color = color
+
+    def draw_vertical_line(self, x, y1, y2, color):
+        for point in self._canvas.vertical_line(x=x, y1=y1, y2=y2):
+            point.color = color
+
+    def draw_rectangle(self, x1, y1, x2, y2, color):
+        self.draw_horizontal_line(x1=x1, x2=x2, y=y1, color=color)
+        self.draw_horizontal_line(x1=x1, x2=x2, y=y2, color=color)
+        self.draw_vertical_line(x=x1, y1=y1, y2=y2, color=color)
+        self.draw_vertical_line(x=x2, y1=y1, y2=y2, color=color)

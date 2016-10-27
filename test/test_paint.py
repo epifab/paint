@@ -30,6 +30,29 @@ class CanvasTests(unittest.TestCase):
         self.assertRaises(PointOutOfCanvas, canvas.point, 10, 0)
         self.assertRaises(PointOutOfCanvas, canvas.point, 0, 8)
 
+    def test_get_horizontal_line(self):
+        point_factory_mock = mock.Mock()
+        point_factory_mock.create_point = lambda x, y: (x, y)
+        canvas = Canvas(10, 8, point_factory_mock)
+        expeceted_points = [
+            (2, 3),
+            (3, 3),
+            (4, 3),
+            (5, 3)
+        ]
+        self.assertListEqual(expeceted_points, canvas.horizontal_line(x1=2, x2=5, y=3))
+
+    def test_get_vertical_line(self):
+        point_factory_mock = mock.Mock()
+        point_factory_mock.create_point = lambda x, y: (x, y)
+        canvas = Canvas(10, 8, point_factory_mock)
+        expeceted_points = [
+            (3, 2),
+            (3, 3),
+            (3, 4),
+            (3, 5)
+        ]
+        self.assertListEqual(expeceted_points, canvas.vertical_line(x=3, y1=2, y2=5))
 
 class PointTests(unittest.TestCase):
     def test_constructor(self):
@@ -48,6 +71,53 @@ class PointTests(unittest.TestCase):
             p.color = color
         p = Point(3, 4, 'O', {'O', 'X'})
         self.assertRaises(ValueError, set_color, p, '#')
+
+
+class PainterTests(unittest.TestCase):
+    def test_draw_horizontal_line(self):
+        point_mocks = [mock.Mock(), mock.Mock()]
+        canvas_mock = mock.Mock()
+        canvas_mock.horizontal_line = mock.Mock(return_value=point_mocks)
+
+        painter = Painter(canvas_mock)
+        painter.draw_horizontal_line(x1=2, x2=5, y=3, color='X')
+
+        canvas_mock.horizontal_line.assert_called_once_with(x1=2, x2=5, y=3)
+        self.assertEqual('X', point_mocks[0].color)
+        self.assertEqual('X', point_mocks[1].color)
+
+    def test_draw_vertical_line(self):
+        point_mocks = [mock.Mock(), mock.Mock()]
+        canvas_mock = mock.Mock()
+        canvas_mock.vertical_line = mock.Mock(return_value=point_mocks)
+
+        painter = Painter(canvas_mock)
+        painter.draw_vertical_line(x=2, y1=2, y2=5, color='X')
+
+        canvas_mock.vertical_line.assert_called_once_with(x=2, y1=2, y2=5)
+        self.assertEqual('X', point_mocks[0].color)
+        self.assertEqual('X', point_mocks[1].color)
+
+    def test_draw_rectangle(self):
+        canvas_mock = mock.Mock()
+
+        draw_horizontal_line_mock = mock.Mock()
+        draw_vertical_line_mock = mock.Mock()
+
+        painter = Painter(canvas_mock)
+        painter.draw_horizontal_line = draw_horizontal_line_mock
+        painter.draw_vertical_line = draw_vertical_line_mock
+
+        painter.draw_rectangle(x1=2, x2=5, y1=2, y2=5, color='X')
+
+        draw_horizontal_line_mock.assert_has_calls([
+            mock.call(x1=2, x2=5, y=2, color='X'),
+            mock.call(x1=2, x2=5, y=5, color='X'),
+        ])
+        draw_vertical_line_mock.assert_has_calls([
+            mock.call(x=2, y1=2, y2=5, color='X'),
+            mock.call(x=5, y1=2, y2=5, color='X'),
+        ])
 
 
 if __name__ == "__main__":
