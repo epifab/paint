@@ -40,23 +40,38 @@ class Canvas(object):
         """
         Returns the set of points of the area connected to (x, y)
         """
-        def func(color, visited, linked, x1, y1):
-            try:
-                point = self.point(x1, y1)
-            except PointOutOfCanvas:
-                pass
-            else:
-                if point not in visited:
-                    visited.add(point)
-                    if point.color == color:
-                        linked.add(point)
-                        func(color, visited, linked, x1 - 1, y1)
-                        func(color, visited, linked, x1 + 1, y1)
-                        func(color, visited, linked, x1, y1 - 1)
-                        func(color, visited, linked, x1, y1 + 1)
-            return linked
+        visited = set()
+        linked = set()
+        stack = []
 
-        return func(self.point(x, y).color, set(), set(), x, y)
+        point = self.point(x, y)
+        color = point.color
+        stack.append(point)
+
+        while stack:
+            point = stack.pop()
+            if point not in visited:
+                visited.add(point)
+                if point.color == color:
+                    linked.add(point)
+                    try:
+                        stack.append(self.point(point.x + 1, point.y))
+                    except PointOutOfCanvas:
+                        pass
+                    try:
+                        stack.append(self.point(point.x - 1, point.y))
+                    except PointOutOfCanvas:
+                        pass
+                    try:
+                        stack.append(self.point(point.x, point.y - 1))
+                    except PointOutOfCanvas:
+                        pass
+                    try:
+                        stack.append(self.point(point.x, point.y + 1))
+                    except PointOutOfCanvas:
+                        pass
+
+        return linked
 
 
 class PointFactory(object):
