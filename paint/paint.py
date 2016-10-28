@@ -3,19 +3,19 @@ class PointOutOfCanvas(Exception):
 
 
 class Canvas(object):
-    def __init__(self, x, y, point_factory):
-        assert(x > 0 and y > 0)
-        self._x = x
-        self._y = y
-        self._matrix = [[point_factory.create_point(i, j) for j in xrange(y)] for i in xrange(x)]
+    def __init__(self, width, height, point_factory):
+        assert(width > 0 and height > 0)
+        self._width = width
+        self._height = height
+        self._matrix = [[point_factory.create_point(x, y) for y in xrange(height)] for x in xrange(width)]
 
     @property
     def width(self):
-        return self._x
+        return self._width
 
     @property
     def height(self):
-        return self._y
+        return self._height
 
     def point(self, x, y):
         if x < 0 or x >= self.width:
@@ -74,8 +74,8 @@ class Point(object):
     def __init__(self, x, y, color, palette):
         self._x = x
         self._y = y
-        self._color = color
         self._palette = palette
+        self.color = color
 
     @property
     def color(self):
@@ -84,7 +84,7 @@ class Point(object):
     @color.setter
     def color(self, value):
         if value not in self._palette:
-            raise ValueError("Unknown colour")
+            raise ValueError("Unknown color")
         self._color = value
 
     @property
