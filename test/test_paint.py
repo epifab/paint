@@ -50,13 +50,20 @@ class CanvasTests(unittest.TestCase):
         point_factory_mock = mock.Mock()
         point_factory_mock.create_point = lambda x, y: (x, y)
         canvas = Canvas(10, 8, point_factory_mock)
-        expeceted_points = [
+        expected_points = [
             (2, 3),
             (3, 3),
             (4, 3),
             (5, 3)
         ]
-        self.assertListEqual(expeceted_points, canvas.horizontal_line(x1=2, x2=5, y=3))
+        self.assertListEqual(expected_points, canvas.horizontal_line(x1=2, x2=5, y=3))
+
+    def test_horizontal_line_single_point(self):
+        point_factory_mock = mock.Mock()
+        point_factory_mock.create_point = lambda x, y: (x, y)
+        canvas = Canvas(10, 8, point_factory_mock)
+        expected_points = [(2, 3)]
+        self.assertListEqual(expected_points, canvas.horizontal_line(x1=2, x2=2, y=3))
 
     def test_horizontal_line_when_out_of_range_throws_exception(self):
         width = 10
@@ -75,13 +82,20 @@ class CanvasTests(unittest.TestCase):
         point_factory_mock = mock.Mock()
         point_factory_mock.create_point = lambda x, y: (x, y)
         canvas = Canvas(10, 8, point_factory_mock)
-        expeceted_points = [
+        expected_points = [
             (3, 2),
             (3, 3),
             (3, 4),
             (3, 5)
         ]
-        self.assertListEqual(expeceted_points, canvas.vertical_line(x=3, y1=2, y2=5))
+        self.assertListEqual(expected_points, canvas.vertical_line(x=3, y1=2, y2=5))
+
+    def test_vertical_line_single_point(self):
+        point_factory_mock = mock.Mock()
+        point_factory_mock.create_point = lambda x, y: (x, y)
+        canvas = Canvas(10, 8, point_factory_mock)
+        expected_points = [(3, 2)]
+        self.assertListEqual(expected_points, canvas.vertical_line(x=3, y1=2, y2=2))
 
     def test_vertical_line_when_out_of_range_throws_exception(self):
         width = 10
