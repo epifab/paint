@@ -7,7 +7,7 @@ class Canvas(object):
         assert(width > 0 and height > 0)
         self._width = width
         self._height = height
-        self._matrix = [[point_factory.create_point(x, y) for y in xrange(height)] for x in xrange(width)]
+        self._matrix = [[point_factory.create_point(x, y) for y in range(height)] for x in range(width)]
 
     @property
     def width(self):
@@ -30,7 +30,7 @@ class Canvas(object):
         """
         if x > xx:
             x, xx = xx, x
-        return [self.point(x, y) for x in (xrange(x, xx + 1))]
+        return [self.point(x, y) for x in (range(x, xx + 1))]
 
     def vertical_line(self, x, y, yy):
         """
@@ -38,7 +38,7 @@ class Canvas(object):
         """
         if y > yy:
             y, yy = yy, y
-        return [self.point(x, y) for y in (xrange(y, yy + 1))]
+        return [self.point(x, y) for y in (range(y, yy + 1))]
 
     def line(self, x1, y1, x2, y2):
         if x1 == x2 and y1 == y2:
@@ -55,7 +55,7 @@ class Canvas(object):
         m = float(y2 - y1) / float(x2 - x1)
         return [
             self.point(x, int(round((m * (x - x1)) + y1)))
-            for x in xrange(x1, x2 + 1)
+            for x in range(x1, x2 + 1)
         ]
 
     def uniform_area(self, x, y):

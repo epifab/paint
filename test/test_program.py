@@ -1,11 +1,11 @@
-import unittest
 from paint import *
+import unittest
 
 
 class ProgramTests(unittest.TestCase):
     def _assert_canvas_equals(self, canvas, expeted_visual_canvas):
-        for y in xrange(len(expeted_visual_canvas)):
-            for x in xrange(len(expeted_visual_canvas[y])):
+        for y in range(len(expeted_visual_canvas)):
+            for x in range(len(expeted_visual_canvas[y])):
                 self.assertEquals(expeted_visual_canvas[y][x], canvas.point(x, y).color)
 
     class CanvasPrinterStub(AsciiCanvasPrinter):
@@ -76,11 +76,18 @@ class ProgramTests(unittest.TestCase):
         program.run_command("Z")
         self.assertEquals(printer_mock.printed_canvas, expected_canvas3)
 
-        program.run_command("Y")
-        self.assertEquals(printer_mock.printed_canvas, expected_canvas4)
+        program.run_command("Z")
+        self.assertEquals(printer_mock.printed_canvas, expected_canvas2)
 
         program.run_command("Y")
-        self.assertEquals(printer_mock.printed_canvas, expected_canvas5)
+        self.assertEquals(printer_mock.printed_canvas, expected_canvas3)
+
+        program.run_command("R", 16, 1, 20, 3)
+        self.assertEquals(printer_mock.printed_canvas, expected_canvas4)
+
+        # The previous action destroyed the future history
+        program.run_command("Y")
+        self.assertEquals(printer_mock.printed_canvas, expected_canvas4)
 
         self.assertRaises(Quit, program.run_command, "Q")
 

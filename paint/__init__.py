@@ -1,2 +1,2 @@
-from paint import *
-from program import *
+from .paint import *
+from .program import *

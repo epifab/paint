@@ -1,6 +1,6 @@
 from paint import *
 import unittest
-import mock
+from unittest import mock
 
 
 class CanvasTests(unittest.TestCase):
@@ -122,10 +122,10 @@ class CanvasTests(unittest.TestCase):
         width = 10
         height = 6
 
-        point_mocks = [[CanvasTests.PointMock(x, y, '-') for y in xrange(height)] for x in xrange(width)]
+        point_mocks = [[CanvasTests.PointMock(x, y, '-') for y in range(height)] for x in range(width)]
         expected_points = set()
-        for x in xrange(width):
-            for y in xrange(height):
+        for x in range(width):
+            for y in range(height):
                 expected_points.add(point_mocks[x][y])
 
         point_factory_mock = mock.Mock()
@@ -135,19 +135,15 @@ class CanvasTests(unittest.TestCase):
         self.assertSetEqual(expected_points, canvas.uniform_area(2, 2))
 
     def test_uniform_area_large_canvas(self):
-        # ----------
-        # ----------
-        # ----------
-        # ----------
-        # ----------
-        # ----------
+        self.skipTest("Takes several seconds to bucket fill a million points canvas")
+
         width = 1000
         height = 1000
 
-        point_mocks = [[CanvasTests.PointMock(x, y, '-') for y in xrange(height)] for x in xrange(width)]
+        point_mocks = [[CanvasTests.PointMock(x, y, '-') for y in range(height)] for x in range(width)]
         expected_points = set()
-        for x in xrange(width):
-            for y in xrange(height):
+        for x in range(width):
+            for y in range(height):
                 expected_points.add(point_mocks[x][y])
 
         point_factory_mock = mock.Mock()
@@ -167,7 +163,7 @@ class CanvasTests(unittest.TestCase):
         width = 10
         height = 6
 
-        point_mocks = [[CanvasTests.PointMock(x, y, '-') for y in xrange(height)] for x in xrange(width)]
+        point_mocks = [[CanvasTests.PointMock(x, y, '-') for y in range(height)] for x in range(width)]
         point_mocks[3][3].color = 'X'
 
         point_factory_mock = mock.Mock()
@@ -188,7 +184,7 @@ class CanvasTests(unittest.TestCase):
         width = 4
         height = 4
 
-        point_mocks = [[CanvasTests.PointMock(x, y, '-') for y in xrange(height)] for x in xrange(width)]
+        point_mocks = [[CanvasTests.PointMock(x, y, '-') for y in range(height)] for x in range(width)]
         point_mocks[1][0].color = 'X'
         point_mocks[1][1].color = 'X'
         point_mocks[1][2].color = 'X'
@@ -215,7 +211,7 @@ class CanvasTests(unittest.TestCase):
         width = 4
         height = 4
 
-        point_mocks = [[CanvasTests.PointMock(x, y, '-') for y in xrange(height)] for x in xrange(width)]
+        point_mocks = [[CanvasTests.PointMock(x, y, '-') for y in range(height)] for x in range(width)]
         point_mocks[0][1].color = 'X'
         point_mocks[1][1].color = 'X'
         point_mocks[2][1].color = 'X'
@@ -244,7 +240,7 @@ class CanvasTests(unittest.TestCase):
         width = 10
         height = 6
 
-        point_mocks = [[CanvasTests.PointMock(x, y, '-') for y in xrange(height)] for x in xrange(width)]
+        point_mocks = [[CanvasTests.PointMock(x, y, '-') for y in range(height)] for x in range(width)]
         point_mocks[8][0].color = 'X'
         point_mocks[8][1].color = 'X'
         point_mocks[5][2].color = 'X'
@@ -274,7 +270,7 @@ class CanvasTests(unittest.TestCase):
         width = 10
         height = 6
 
-        point_mocks = [[CanvasTests.PointMock(x, y, '-') for y in xrange(height)] for x in xrange(width)]
+        point_mocks = [[CanvasTests.PointMock(x, y, '-') for y in range(height)] for x in range(width)]
 
         point_factory_mock = mock.Mock()
         point_factory_mock.create_point = lambda x, y: point_mocks[x][y]
@@ -289,7 +285,7 @@ class CanvasTests(unittest.TestCase):
         width = 10
         height = 10
 
-        point_mocks = [[CanvasTests.PointMock(x, y, '-') for y in xrange(height)] for x in xrange(width)]
+        point_mocks = [[CanvasTests.PointMock(x, y, '-') for y in range(height)] for x in range(width)]
 
         point_factory_mock = mock.Mock()
         point_factory_mock.create_point = lambda x, y: point_mocks[x][y]

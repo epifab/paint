@@ -24,9 +24,9 @@ class AsciiCanvasPrinter(object):
         return [
             "".join(
                 canvas.point(x, y).color
-                for x in xrange(canvas.width)
+                for x in range(canvas.width)
             )
-            for y in xrange(canvas.height)
+            for y in range(canvas.height)
         ]
 
 
