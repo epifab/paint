@@ -24,19 +24,41 @@ class Canvas(object):
             raise PointOutOfCanvas
         return self._matrix[x][y]
 
-    def horizontal_line(self, x1, x2, y):
+    def horizontal_line(self, x, y, xx):
         """
         Returns the list of points between (x1, y) and (x2, y)
         """
-        return [self.point(x, y) for x in (xrange(x1, x2 + 1) if x2 >= x1 else xrange(x2, x1 + 1))]
+        if x > xx:
+            x, xx = xx, x
+        return [self.point(x, y) for x in (xrange(x, xx + 1))]
 
-    def vertical_line(self, x, y1, y2):
+    def vertical_line(self, x, y, yy):
         """
         Returns the list of points between (x, y1) and (x, y2)
         """
-        return [self.point(x, y) for y in (xrange(y1, y2 + 1) if y2 >= y1 else xrange(y2, y1 + 1))]
+        if y > yy:
+            y, yy = yy, y
+        return [self.point(x, y) for y in (xrange(y, yy + 1))]
 
-    def connected(self, x, y):
+    def line(self, x1, y1, x2, y2):
+        if x1 == x2 and y1 == y2:
+            return [self.point(x1, y1)]
+        elif x1 == x2:
+            return self.vertical_line(x=x1, y=y1, yy=y2)
+        elif y1 == y2:
+            return self.horizontal_line(x=x1, y=y1, xx=x2)
+
+        if x1 > x2:
+            x1, x2 = x2, x1
+            y1, y2 = y2, y1
+
+        m = float(y2 - y1) / float(x2 - x1)
+        return [
+            self.point(x, int(round((m * (x - x1)) + y1)))
+            for x in xrange(x1, x2 + 1)
+        ]
+
+    def uniform_area(self, x, y):
         """
         Returns the set of points of the area connected to (x, y)
         """
@@ -50,24 +72,20 @@ class Canvas(object):
 
         while stack:
             point = stack.pop()
-            if point not in visited:
-                visited.add(point)
-                if point.color == color:
-                    linked.add(point)
+            visited.add(point)
+            if point.color == color:
+                linked.add(point)
+                nearby = [
+                    (point.x - 1, point.y),
+                    (point.x + 1, point.y),
+                    (point.x, point.y - 1),
+                    (point.x, point.y + 1),
+                ]
+                for x2, y2 in nearby:
                     try:
-                        stack.append(self.point(point.x + 1, point.y))
-                    except PointOutOfCanvas:
-                        pass
-                    try:
-                        stack.append(self.point(point.x - 1, point.y))
-                    except PointOutOfCanvas:
-                        pass
-                    try:
-                        stack.append(self.point(point.x, point.y - 1))
-                    except PointOutOfCanvas:
-                        pass
-                    try:
-                        stack.append(self.point(point.x, point.y + 1))
+                        point_nearby = self.point(x2, y2)
+                        if point_nearby not in visited:
+                            stack.append(point_nearby)
                     except PointOutOfCanvas:
                         pass
 
@@ -75,32 +93,19 @@ class Canvas(object):
 
 
 class PointFactory(object):
-    def __init__(self, default_color, palette):
-        assert(default_color in palette)
+    def __init__(self, default_color):
         self.default_color = default_color
-        self.palette = palette
 
     def create_point(self, x, y):
         """Creates a new point"""
-        return Point(x, y, self.default_color, palette=self.palette)
+        return Point(x, y, self.default_color)
 
 
 class Point(object):
-    def __init__(self, x, y, color, palette):
+    def __init__(self, x, y, color):
         self._x = x
         self._y = y
-        self._palette = palette
         self.color = color
-
-    @property
-    def color(self):
-        return self._color
-
-    @color.setter
-    def color(self, value):
-        if value not in self._palette:
-            raise ValueError("Unknown color")
-        self._color = value
 
     @property
     def x(self):
@@ -115,32 +120,25 @@ class Painter(object):
     def __init__(self, canvas):
         self._canvas = canvas
 
-    def draw_horizontal_line(self, x1, x2, y, color):
+    def draw_line(self, x1, y1, x2, y2, color):
         """
-        Paints the line between (x1, y) and (x2, y)
+        Paints the line between (x1, y1) and (x2, y2)
         """
-        for point in self._canvas.horizontal_line(x1=x1, x2=x2, y=y):
-            point.color = color
-
-    def draw_vertical_line(self, x, y1, y2, color):
-        """
-        Paints the line between (x, y1) and (x, y2)
-        """
-        for point in self._canvas.vertical_line(x=x, y1=y1, y2=y2):
+        for point in self._canvas.line(x1=x1, y1=y1, x2=x2, y2=y2):
             point.color = color
 
     def draw_rectangle(self, x1, y1, x2, y2, color):
         """
         Paints the border of the rectangle with corners in (x1, y1) and (x2, y2)
         """
-        self.draw_horizontal_line(x1=x1, x2=x2, y=y1, color=color)
-        self.draw_horizontal_line(x1=x1, x2=x2, y=y2, color=color)
-        self.draw_vertical_line(x=x1, y1=y1, y2=y2, color=color)
-        self.draw_vertical_line(x=x2, y1=y1, y2=y2, color=color)
+        self.draw_line(x1=x1, y1=y1, x2=x2, y2=y1, color=color)
+        self.draw_line(x1=x1, y1=y2, x2=x2, y2=y2, color=color)
+        self.draw_line(x1=x1, y1=y1, x2=x1, y2=y2, color=color)
+        self.draw_line(x1=x2, y1=y1, x2=x2, y2=y2, color=color)
 
     def bucket_fill(self, x, y, color):
         """
         Paints the area connected to (x, y)
         """
-        for point in self._canvas.connected(x=x, y=y):
+        for point in self._canvas.uniform_area(x=x, y=y):
             point.color = color

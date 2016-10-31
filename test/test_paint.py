@@ -58,14 +58,14 @@ class CanvasTests(unittest.TestCase):
             (4, 3),
             (5, 3)
         ]
-        self.assertListEqual(expected_points, canvas.horizontal_line(x1=2, x2=5, y=3))
+        self.assertListEqual(expected_points, canvas.horizontal_line(x=2, xx=5, y=3))
 
     def test_horizontal_line_single_point(self):
         point_factory_mock = mock.Mock()
         point_factory_mock.create_point = lambda x, y: (x, y)
         canvas = Canvas(10, 8, point_factory_mock)
         expected_points = [(2, 3)]
-        self.assertListEqual(expected_points, canvas.horizontal_line(x1=2, x2=2, y=3))
+        self.assertListEqual(expected_points, canvas.horizontal_line(x=2, xx=2, y=3))
 
     def test_horizontal_line_when_out_of_range_throws_exception(self):
         width = 10
@@ -73,12 +73,12 @@ class CanvasTests(unittest.TestCase):
         point_factory_mock = mock.Mock()
         point_factory_mock.create_point = lambda x, y: (x, y)
         canvas = Canvas(10, 8, point_factory_mock)
-        self.assertRaises(PointOutOfCanvas, canvas.horizontal_line, -1, 4, 3)
-        self.assertRaises(PointOutOfCanvas, canvas.horizontal_line, width, 4, 3)
-        self.assertRaises(PointOutOfCanvas, canvas.horizontal_line, 2, -1, 3)
-        self.assertRaises(PointOutOfCanvas, canvas.horizontal_line, 2, width, 3)
-        self.assertRaises(PointOutOfCanvas, canvas.horizontal_line, 2, 2, -1)
-        self.assertRaises(PointOutOfCanvas, canvas.horizontal_line, 2, 2, height)
+        self.assertRaises(PointOutOfCanvas, canvas.horizontal_line, x=-1, y=3, xx=4)
+        self.assertRaises(PointOutOfCanvas, canvas.horizontal_line, x=width, y=3, xx=4)
+        self.assertRaises(PointOutOfCanvas, canvas.horizontal_line, x=2, y=3, xx=-1)
+        self.assertRaises(PointOutOfCanvas, canvas.horizontal_line, x=2, y=3, xx=width)
+        self.assertRaises(PointOutOfCanvas, canvas.horizontal_line, x=2, y=-1, xx=2)
+        self.assertRaises(PointOutOfCanvas, canvas.horizontal_line, x=2, y=height, xx=2)
 
     def test_vertical_line(self):
         point_factory_mock = mock.Mock()
@@ -90,14 +90,14 @@ class CanvasTests(unittest.TestCase):
             (3, 4),
             (3, 5)
         ]
-        self.assertListEqual(expected_points, canvas.vertical_line(x=3, y1=2, y2=5))
+        self.assertListEqual(expected_points, canvas.vertical_line(x=3, y=2, yy=5))
 
     def test_vertical_line_single_point(self):
         point_factory_mock = mock.Mock()
         point_factory_mock.create_point = lambda x, y: (x, y)
         canvas = Canvas(10, 8, point_factory_mock)
         expected_points = [(3, 2)]
-        self.assertListEqual(expected_points, canvas.vertical_line(x=3, y1=2, y2=2))
+        self.assertListEqual(expected_points, canvas.vertical_line(x=3, y=2, yy=2))
 
     def test_vertical_line_when_out_of_range_throws_exception(self):
         width = 10
@@ -112,7 +112,7 @@ class CanvasTests(unittest.TestCase):
         self.assertRaises(PointOutOfCanvas, canvas.vertical_line, 4, 2, -1)
         self.assertRaises(PointOutOfCanvas, canvas.vertical_line, 4, 2, height)
 
-    def test_connected_uniform_canvas(self):
+    def test_uniform_area_uniform_canvas(self):
         # ----------
         # ----------
         # ----------
@@ -132,9 +132,9 @@ class CanvasTests(unittest.TestCase):
         point_factory_mock.create_point = lambda x, y: point_mocks[x][y]
         canvas = Canvas(width, height, point_factory_mock)
 
-        self.assertSetEqual(expected_points, canvas.connected(2, 2))
+        self.assertSetEqual(expected_points, canvas.uniform_area(2, 2))
 
-    def test_connected_large_canvas(self):
+    def test_uniform_area_large_canvas(self):
         # ----------
         # ----------
         # ----------
@@ -154,9 +154,9 @@ class CanvasTests(unittest.TestCase):
         point_factory_mock.create_point = lambda x, y: point_mocks[x][y]
         canvas = Canvas(width, height, point_factory_mock)
 
-        self.assertSetEqual(expected_points, canvas.connected(2, 2))
+        self.assertSetEqual(expected_points, canvas.uniform_area(2, 2))
 
-    def test_connected_isolated_point(self):
+    def test_uniform_area_isolated_point(self):
         # ----------
         # ----------
         # -----X----
@@ -177,9 +177,9 @@ class CanvasTests(unittest.TestCase):
         expected_points = {
             point_mocks[3][3],
         }
-        self.assertSetEqual(expected_points, canvas.connected(3, 3))
+        self.assertSetEqual(expected_points, canvas.uniform_area(3, 3))
 
-    def test_connected_vertically_split_canvas(self):
+    def test_uniform_area_vertically_split_canvas(self):
         # -X--
         # -X--
         # -X--
@@ -204,9 +204,9 @@ class CanvasTests(unittest.TestCase):
             point_mocks[0][2],
             point_mocks[0][3],
         }
-        self.assertSetEqual(expected_points, canvas.connected(0, 0))
+        self.assertSetEqual(expected_points, canvas.uniform_area(0, 0))
 
-    def test_connected_horizontally_split_canvas(self):
+    def test_uniform_area_horizontally_split_canvas(self):
         # ----
         # XXXX
         # ----
@@ -231,9 +231,9 @@ class CanvasTests(unittest.TestCase):
             point_mocks[2][0],
             point_mocks[3][0],
         }
-        self.assertSetEqual(expected_points, canvas.connected(0, 0))
+        self.assertSetEqual(expected_points, canvas.uniform_area(0, 0))
 
-    def test_connected_happy_test(self):
+    def test_uniform_area_happy_test(self):
         # --------X-
         # --------X-
         # -----X----
@@ -268,9 +268,9 @@ class CanvasTests(unittest.TestCase):
             point_mocks[5][4],
             point_mocks[6][4],
         }
-        self.assertSetEqual(expected_points, canvas.connected(3, 3))
+        self.assertSetEqual(expected_points, canvas.uniform_area(3, 3))
 
-    def test_connected_out_of_range_throws_exception(self):
+    def test_uniform_area_out_of_range_throws_exception(self):
         width = 10
         height = 6
 
@@ -280,81 +280,58 @@ class CanvasTests(unittest.TestCase):
         point_factory_mock.create_point = lambda x, y: point_mocks[x][y]
         canvas = Canvas(width, height, point_factory_mock)
 
-        self.assertRaises(PointOutOfCanvas, canvas.connected, -1, 3)
-        self.assertRaises(PointOutOfCanvas, canvas.connected, width, 3)
-        self.assertRaises(PointOutOfCanvas, canvas.connected, 2, -1)
-        self.assertRaises(PointOutOfCanvas, canvas.connected, 2, height)
+        self.assertRaises(PointOutOfCanvas, canvas.uniform_area, -1, 3)
+        self.assertRaises(PointOutOfCanvas, canvas.uniform_area, width, 3)
+        self.assertRaises(PointOutOfCanvas, canvas.uniform_area, 2, -1)
+        self.assertRaises(PointOutOfCanvas, canvas.uniform_area, 2, height)
 
+    def test_line(self):
+        width = 10
+        height = 10
 
-class PointTests(unittest.TestCase):
-    def test_constructor(self):
-        p = Point(3, 4, 'O', {'O', 'X'})
-        self.assertEqual(3, p.x)
-        self.assertEqual(4, p.y)
-        self.assertEqual('O', p.color)
+        point_mocks = [[CanvasTests.PointMock(x, y, '-') for y in xrange(height)] for x in xrange(width)]
 
-    def test_color_set_with_valid_color(self):
-        p = Point(3, 4, 'O', {'O', 'X'})
-        p.color = 'X'
-        self.assertEqual('X', p.color)
+        point_factory_mock = mock.Mock()
+        point_factory_mock.create_point = lambda x, y: point_mocks[x][y]
+        canvas = Canvas(width, height, point_factory_mock)
 
-    def test_colour_set_with_invalid_color_throws_exception(self):
-        def set_color(p, color):
-            p.color = color
-        p = Point(3, 4, 'O', {'O', 'X'})
-        self.assertRaises(ValueError, set_color, p, '#')
+        self.assertEqual([point_mocks[1][1], point_mocks[2][2], point_mocks[3][3]], canvas.line(1, 1, 3, 3))
 
 
 class PainterTests(unittest.TestCase):
-    def test_draw_horizontal_line(self):
+    def test_draw_line(self):
         point_mocks = [mock.Mock(), mock.Mock()]
         canvas_mock = mock.Mock()
-        canvas_mock.horizontal_line = mock.Mock(return_value=point_mocks)
+        canvas_mock.line = mock.Mock(return_value=point_mocks)
 
         painter = Painter(canvas_mock)
-        painter.draw_horizontal_line(x1=2, x2=5, y=3, color='X')
+        painter.draw_line(x1=2, y1=2, x2=2, y2=5, color='X')
 
-        canvas_mock.horizontal_line.assert_called_once_with(x1=2, x2=5, y=3)
-        for point in point_mocks:
-            self.assertEqual('X', point.color)
-
-    def test_draw_vertical_line(self):
-        point_mocks = [mock.Mock(), mock.Mock()]
-        canvas_mock = mock.Mock()
-        canvas_mock.vertical_line = mock.Mock(return_value=point_mocks)
-
-        painter = Painter(canvas_mock)
-        painter.draw_vertical_line(x=2, y1=2, y2=5, color='X')
-
-        canvas_mock.vertical_line.assert_called_once_with(x=2, y1=2, y2=5)
+        canvas_mock.line.assert_called_once_with(x1=2, y1=2, x2=2, y2=5)
         for point in point_mocks:
             self.assertEqual('X', point.color)
 
     def test_draw_rectangle(self):
         canvas_mock = mock.Mock()
 
-        draw_horizontal_line_mock = mock.Mock()
-        draw_vertical_line_mock = mock.Mock()
+        draw_line_mock = mock.Mock()
 
         painter = Painter(canvas_mock)
-        painter.draw_horizontal_line = draw_horizontal_line_mock
-        painter.draw_vertical_line = draw_vertical_line_mock
+        painter.draw_line = draw_line_mock
 
-        painter.draw_rectangle(x1=2, x2=5, y1=2, y2=5, color='X')
+        painter.draw_rectangle(x1=2, y1=2, x2=5, y2=5, color='X')
 
-        draw_horizontal_line_mock.assert_has_calls([
-            mock.call(x1=2, x2=5, y=2, color='X'),
-            mock.call(x1=2, x2=5, y=5, color='X'),
-        ])
-        draw_vertical_line_mock.assert_has_calls([
-            mock.call(x=2, y1=2, y2=5, color='X'),
-            mock.call(x=5, y1=2, y2=5, color='X'),
+        draw_line_mock.assert_has_calls([
+            mock.call(x1=2, y1=2, x2=5, y2=2, color='X'),
+            mock.call(x1=2, y1=5, x2=5, y2=5, color='X'),
+            mock.call(x1=2, y1=2, x2=2, y2=5, color='X'),
+            mock.call(x1=5, y1=2, x2=5, y2=5, color='X'),
         ])
 
     def test_bucket_fill(self):
         point_mocks = {mock.Mock(), mock.Mock()}
         canvas_mock = mock.Mock()
-        canvas_mock.connected = mock.Mock(return_value=point_mocks)
+        canvas_mock.uniform_area = mock.Mock(return_value=point_mocks)
 
         painter = Painter(canvas_mock)
         painter.bucket_fill(123, 324, 'X')
