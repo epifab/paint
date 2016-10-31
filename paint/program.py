@@ -1,4 +1,5 @@
 from paint import *
+import copy
 
 
 class CommandError(Exception):
@@ -29,120 +30,176 @@ class AsciiCanvasPrinter(object):
         ]
 
 
-class Program(object):
-    def __init__(self, printer, palette, background_color, foreground_color):
-        self._printer = printer
-        self._palette = palette
-        self._background_color = background_color
-        self._foreground_color = foreground_color
-        self._canvas = None
-        self._commands = {
-            'Q': self.quit_command,
-            'C': self.canvas_command,
-            'L': self.draw_line_command,
-            'R': self.draw_rectangle_command,
-            'B': self.bucket_fill_command
-        }
+class ProgramState(object):
+    def __init__(self, palette, background_color, foreground_color):
+        self.palette = palette
+        self.background_color = background_color
+        self.foreground_color = foreground_color
+        self.canvas = None
+        self.undo = []
+        self.redo = []
 
-    @property
-    def canvas(self):
-        return self._canvas
 
-    def quit_command(self, args):
+class CommandParameters(object):
+    def __init__(self, params):
+        self.params = params
+
+    def get_parameter(self, position, name, validate=lambda x: True, convert=str):
+        try:
+            value = convert(self.params[position])
+            if not validate(value):
+                raise CommandError("Invalid parameter {}".format(name))
+            return value
+        except ValueError:
+            raise CommandError("Invalid parameter {}".format(name))
+        except IndexError:
+            raise CommandError("Parameter {} is missing".format(name))
+
+
+class Command(object):
+    def __init__(self, state, parameters):
+        self.state = state
+        self.parameters = parameters
+
+    def execute(self):
+        raise NotImplemented
+
+
+class QuitCommand(Command):
+    def execute(self):
         raise Quit
 
-    def canvas_command(self, args):
+
+class CanvasCommand(Command):
+    def execute(self):
+        width = self.parameters.get_parameter(1, "width", convert=int, validate=lambda x: x > 0)
+        height = self.parameters.get_parameter(2, "height", convert=int, validate=lambda x: x > 0)
+
+        old_canvas = self.state.canvas
+        new_canvas = Canvas(width, height, PointFactory(self.state.background_color))
+
+        def undo():
+            self.state.canvas = old_canvas
+            self.state.redo.append(do)
+
+        def do():
+            self.state.canvas = new_canvas
+            self.state.undo.append(undo)
+
+        do()
+        self.state.redo = []
+
+
+class PainterCommand(Command):
+    def paint(self, canvas):
+        raise NotImplemented
+
+    def get_x_parameter(self, position, name):
+        return self.parameters.get_parameter(
+            position,
+            name,
+            convert=int,
+            validate=lambda x: 1 <= x <= self.state.canvas.width
+        ) - 1  # User input is 1-based
+
+    def get_y_parameter(self, position, name):
+        return self.parameters.get_parameter(
+            position,
+            name,
+            convert=int,
+            validate=lambda y: 1 <= y <= self.state.canvas.height
+        ) - 1  # User input is 1-based
+
+    def execute(self):
+        if not self.state.canvas:
+            raise CommandError("Please create a canvas first")
+
+        old_canvas = self.state.canvas
+        new_canvas = copy.deepcopy(self.state.canvas)
+
+        self.paint(new_canvas)
+
+        def undo():
+            self.state.canvas = old_canvas
+            self.state.redo.append(do)
+
+        def do():
+            self.state.canvas = new_canvas
+            self.state.undo.append(undo)
+
+        do()
+        self.state.redo = []
+
+
+class LineCommand(PainterCommand):
+    def paint(self, canvas):
+        x1 = self.get_x_parameter(1, "x1")
+        y1 = self.get_y_parameter(2, "y1")
+        x2 = self.get_x_parameter(3, "x2")
+        y2 = self.get_y_parameter(4, "y2")
+        Painter(canvas).draw_line(x1=x1, y1=y1, x2=x2, y2=y2, color=self.state.foreground_color)
+
+
+class BucketFillCommand(PainterCommand):
+    def paint(self, canvas):
+        x = self.get_x_parameter(1, "x")
+        y = self.get_y_parameter(2, "y")
+        color = self.parameters.get_parameter(3, "color", convert=str, validate=lambda c: c in self.state.palette)
+        Painter(canvas).bucket_fill(x=x, y=y, color=color)
+
+
+class RectangleCommand(PainterCommand):
+    def paint(self, canvas):
+        x1 = self.get_x_parameter(1, "x1")
+        y1 = self.get_y_parameter(2, "y1")
+        x2 = self.get_x_parameter(3, "x2")
+        y2 = self.get_y_parameter(4, "y2")
+        Painter(canvas).draw_rectangle(x1=x1, y1=y1, x2=x2, y2=y2, color=self.state.foreground_color)
+
+
+class UndoCommand(Command):
+    def execute(self):
         try:
-            width = int(args[0])
-            assert width > 0
-        except (IndexError, ValueError, AssertionError):
-            raise CommandError("Invalid canvas width")
-
-        try:
-            height = int(args[1])
-            assert height > 0
-        except (ValueError, IndexError, AssertionError):
-            raise CommandError("Invalid canvas height")
-
-        self._canvas = Canvas(width, height, PointFactory(self._background_color, self._palette))
-
-    def draw_line_command(self, args):
-        x1 = self._get_x_parameter(args, 0)
-        y1 = self._get_y_parameter(args, 1)
-        x2 = self._get_x_parameter(args, 2)
-        y2 = self._get_y_parameter(args, 3)
-
-        if x1 == x2:
-            Painter(self._canvas).draw_vertical_line(x1, y1, y2, self._foreground_color)
-        elif y1 == y2:
-            Painter(self._canvas).draw_horizontal_line(x1, x2, y1, self._foreground_color)
-        else:
-            raise CommandError("Diagonal lines are not supported yet")
-
-    def draw_rectangle_command(self, args):
-        x1 = self._get_x_parameter(args, 0)
-        y1 = self._get_y_parameter(args, 1)
-        x2 = self._get_x_parameter(args, 2)
-        y2 = self._get_y_parameter(args, 3)
-
-        Painter(self._canvas).draw_rectangle(x1, y1, x2, y2, self._foreground_color)
-
-    def bucket_fill_command(self, args):
-        x = self._get_x_parameter(args, 0)
-        y = self._get_y_parameter(args, 1)
-        color = self._get_color_parameter(args, 2)
-        Painter(self._canvas).bucket_fill(x, y, color)
-
-    def _get_x_parameter(self, params, position):
-        if self._canvas is None:
-            raise CommandError("Canvas not initialized")
-        try:
-            x = int(params[position])
-            x -= 1  # points coordinate are assumed to be 1-based
-            assert (x >= 0)
-            assert (x < self._canvas.width)
+            undo = self.state.undo.pop()
         except IndexError:
-            raise CommandError("Missing parameter {}".format(position))
-        except ValueError:
-            raise CommandError("Invalid parameter {}: not a number".format(position))
-        except AssertionError:
-            raise CommandError("Invalid parameter {}: x out of range".format(position))
+            pass
         else:
-            return x
+            undo()
 
-    def _get_y_parameter(self, params, position):
-        if self._canvas is None:
-            raise CommandError("Canvas not initialized")
+
+class RedoCommand(Command):
+    def execute(self):
         try:
-            y = int(params[position])
-            y -= 1  # points coordinate are assumed to be 1-based
-            assert (y >= 0)
-            assert (y < self._canvas.height)
+            redo = self.state.redo.pop()
         except IndexError:
-            raise CommandError("Missing parameter {}".format(position))
-        except ValueError:
-            raise CommandError("Invalid parameter {}: not a number".format(position))
-        except AssertionError:
-            raise CommandError("Invalid parameter {}: y out of range".format(position))
+            pass
         else:
-            return y
+            redo()
 
-    def _get_color_parameter(self, params, position):
-        try:
-            c = params[position]
-            assert c in self._palette
-        except IndexError:
-            raise CommandError("Missing parameter {}".format(position))
-        except AssertionError:
-            raise CommandError("Invalid parameter {}: invalid color".format(position))
-        else:
-            return c
 
-    def run_command(self, command_name, *args):
-        if command_name not in self._commands:
+class Program(object):
+    def __init__(self, printer, palette, background_color, foreground_color):
+        self.printer = printer
+        self.state = ProgramState(palette, background_color, foreground_color)
+        self.commands = {
+            'Q': QuitCommand,
+            'C': CanvasCommand,
+            'L': LineCommand,
+            'R': RectangleCommand,
+            'B': BucketFillCommand,
+            'Z': UndoCommand,
+            'Y': RedoCommand,
+        }
+
+    def run_command(self, *args):
+        parameters = CommandParameters(args)
+        command_name = parameters.get_parameter(0, "command name", convert=lambda x: str(x).upper())
+        if command_name not in self.commands:
             raise CommandError("Unknown command")
-        self._commands[command_name](args)
-        self._printer.print_canvas(self._canvas)
+        command = self.commands[command_name](self.state, parameters)
+        command.execute()
+        if self.state.canvas:
+            self.printer.print_canvas(self.state.canvas)
 
     def run(self):
         while True:
