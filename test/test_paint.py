@@ -22,11 +22,11 @@ class CanvasTests(unittest.TestCase):
         point_factory_mock = mock.Mock()
         point_factory_mock.create_point = lambda x, y: (x, y)
         canvas = Canvas(10, 8, point_factory_mock)
-        self.assertEquals((3, 4), canvas.point(3, 4))
-        self.assertEquals((0, 0), canvas.point(0, 0))
-        self.assertEquals((0, 7), canvas.point(0, 7))
-        self.assertEquals((9, 0), canvas.point(9, 0))
-        self.assertEquals((9, 7), canvas.point(9, 7))
+        self.assertEqual((3, 4), canvas.point(3, 4))
+        self.assertEqual((0, 0), canvas.point(0, 0))
+        self.assertEqual((0, 7), canvas.point(0, 7))
+        self.assertEqual((9, 0), canvas.point(9, 0))
+        self.assertEqual((9, 7), canvas.point(9, 7))
 
     def test_point_out_of_range(self):
         point_factory_mock = mock.Mock()

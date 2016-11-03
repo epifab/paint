@@ -44,16 +44,25 @@ class CommandParameters(object):
     def __init__(self, params):
         self.params = params
 
-    def get_parameter(self, position, name, validate=lambda x: True, convert=str):
+    def get_parameter(self, position, name, convert=lambda x: x, validate=lambda x: True):
+        """
+        Gets a command parameter
+        :param position: Parameter position (0 is the command name)
+        :param name: Name of the parameter
+        :param validate: Function that takes the converted parameter and returns True if it's valid
+        :param convert: Function to convert the parameter. If it raises a ValueError, then a CommandError will be raised
+        :return:
+        """
         try:
             value = convert(self.params[position])
-            if not validate(value):
-                raise CommandError("Invalid parameter {}".format(name))
-            return value
         except ValueError:
             raise CommandError("Invalid parameter {}".format(name))
         except IndexError:
             raise CommandError("Parameter {} is missing".format(name))
+        else:
+            if not validate(value):
+                raise CommandError("Invalid parameter {}".format(name))
+            return value
 
 
 class Command(object):
@@ -204,7 +213,7 @@ class Program(object):
     def run(self):
         while True:
             try:
-                command_args = raw_input("enter command: ").split(" ")
+                command_args = input("enter command: ").split(" ")
                 self.run_command(*command_args)
             except Quit:
                 break
