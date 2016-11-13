@@ -30,8 +30,7 @@ class AsciiCanvasPrinter(object):
 
 
 class ProgramState(object):
-    def __init__(self, painter, palette, background_color, foreground_color):
-        self.painter = painter
+    def __init__(self, palette, background_color, foreground_color):
         self.palette = palette
         self.background_color = background_color
         self.foreground_color = foreground_color
@@ -100,6 +99,10 @@ class CanvasCommand(Command):
 
 
 class PainterCommand(Command):
+    @property
+    def painter(self):
+        return Painter(PointFactory(self.state.background_color))
+
     def paint(self, canvas):
         raise NotImplemented
 
@@ -144,7 +147,7 @@ class LineCommand(PainterCommand):
         y1 = self.get_y_parameter(2, "y1")
         x2 = self.get_x_parameter(3, "x2")
         y2 = self.get_y_parameter(4, "y2")
-        return self.state.painter.draw_line(canvas, x1=x1, y1=y1, x2=x2, y2=y2, color=self.state.foreground_color)
+        return self.painter.draw_line(canvas, x1=x1, y1=y1, x2=x2, y2=y2, color=self.state.foreground_color)
 
 
 class BucketFillCommand(PainterCommand):
@@ -152,7 +155,7 @@ class BucketFillCommand(PainterCommand):
         x = self.get_x_parameter(1, "x")
         y = self.get_y_parameter(2, "y")
         color = self.parameters.get_parameter(3, "color", convert=str, validate=lambda c: c in self.state.palette)
-        return self.state.painter.bucket_fill(canvas, x=x, y=y, color=color)
+        return self.painter.bucket_fill(canvas, x=x, y=y, color=color)
 
 
 class RectangleCommand(PainterCommand):
@@ -161,7 +164,7 @@ class RectangleCommand(PainterCommand):
         y1 = self.get_y_parameter(2, "y1")
         x2 = self.get_x_parameter(3, "x2")
         y2 = self.get_y_parameter(4, "y2")
-        return self.state.painter.draw_rectangle(canvas, x1=x1, y1=y1, x2=x2, y2=y2, color=self.state.foreground_color)
+        return self.painter.draw_rectangle(canvas, x1=x1, y1=y1, x2=x2, y2=y2, color=self.state.foreground_color)
 
 
 class UndoCommand(Command):
@@ -187,7 +190,7 @@ class RedoCommand(Command):
 class Program(object):
     def __init__(self, printer, palette, background_color, foreground_color):
         self.printer = printer
-        self.state = ProgramState(Painter(PointFactory(background_color)), palette, background_color, foreground_color)
+        self.state = ProgramState(palette, background_color, foreground_color)
         self.commands = {
             'Q': QuitCommand,
             'C': CanvasCommand,
@@ -211,7 +214,7 @@ class Program(object):
     def run(self):
         while True:
             try:
-                command_args = input("enter command: ").split(" ")
+                command_args = input("enter command: ").split()
                 self.run_command(*command_args)
             except Quit:
                 break
