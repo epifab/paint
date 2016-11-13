@@ -1,5 +1,4 @@
 from paint import *
-import copy
 
 
 class CommandError(Exception):
@@ -31,7 +30,8 @@ class AsciiCanvasPrinter(object):
 
 
 class ProgramState(object):
-    def __init__(self, palette, background_color, foreground_color):
+    def __init__(self, painter, palette, background_color, foreground_color):
+        self.painter = painter
         self.palette = palette
         self.background_color = background_color
         self.foreground_color = foreground_color
@@ -124,9 +124,7 @@ class PainterCommand(Command):
             raise CommandError("Please create a canvas first")
 
         old_canvas = self.state.canvas
-        new_canvas = copy.deepcopy(self.state.canvas)
-
-        self.paint(new_canvas)
+        new_canvas = self.paint(old_canvas)
 
         def undo():
             self.state.canvas = old_canvas
@@ -146,7 +144,7 @@ class LineCommand(PainterCommand):
         y1 = self.get_y_parameter(2, "y1")
         x2 = self.get_x_parameter(3, "x2")
         y2 = self.get_y_parameter(4, "y2")
-        Painter(canvas).draw_line(x1=x1, y1=y1, x2=x2, y2=y2, color=self.state.foreground_color)
+        return self.state.painter.draw_line(canvas, x1=x1, y1=y1, x2=x2, y2=y2, color=self.state.foreground_color)
 
 
 class BucketFillCommand(PainterCommand):
@@ -154,7 +152,7 @@ class BucketFillCommand(PainterCommand):
         x = self.get_x_parameter(1, "x")
         y = self.get_y_parameter(2, "y")
         color = self.parameters.get_parameter(3, "color", convert=str, validate=lambda c: c in self.state.palette)
-        Painter(canvas).bucket_fill(x=x, y=y, color=color)
+        return self.state.painter.bucket_fill(canvas, x=x, y=y, color=color)
 
 
 class RectangleCommand(PainterCommand):
@@ -163,7 +161,7 @@ class RectangleCommand(PainterCommand):
         y1 = self.get_y_parameter(2, "y1")
         x2 = self.get_x_parameter(3, "x2")
         y2 = self.get_y_parameter(4, "y2")
-        Painter(canvas).draw_rectangle(x1=x1, y1=y1, x2=x2, y2=y2, color=self.state.foreground_color)
+        return self.state.painter.draw_rectangle(canvas, x1=x1, y1=y1, x2=x2, y2=y2, color=self.state.foreground_color)
 
 
 class UndoCommand(Command):
@@ -189,7 +187,7 @@ class RedoCommand(Command):
 class Program(object):
     def __init__(self, printer, palette, background_color, foreground_color):
         self.printer = printer
-        self.state = ProgramState(palette, background_color, foreground_color)
+        self.state = ProgramState(Painter(PointFactory(background_color)), palette, background_color, foreground_color)
         self.commands = {
             'Q': QuitCommand,
             'C': CanvasCommand,

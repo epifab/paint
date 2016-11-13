@@ -17,10 +17,11 @@ class Canvas(object):
     def height(self):
         return self._height
 
+    def exists(self, x, y):
+        return 0 <= x < self.width and 0 <= y < self.height
+
     def point(self, x, y):
-        if x < 0 or x >= self.width:
-            raise PointOutOfCanvas
-        if y < 0 or y >= self.height:
+        if not self.exists(x, y):
             raise PointOutOfCanvas
         return self._matrix[x][y]
 
@@ -92,20 +93,45 @@ class Canvas(object):
         return linked
 
 
-class PointFactory(object):
+class PointFactoryInterface(object):
+    def create_point(self, x, y, color=None):
+        raise NotImplemented
+
+
+class PointFactory(PointFactoryInterface):
     def __init__(self, default_color):
         self.default_color = default_color
 
-    def create_point(self, x, y):
+    def create_point(self, x, y, color=None):
         """Creates a new point"""
-        return Point(x, y, self.default_color)
+        return Point(x, y, self.default_color if color is None else color)
+
+
+class DeltaPointFactory(PointFactoryInterface):
+    def __init__(self, canvas, delta, base_factory):
+        self.canvas = canvas
+        self.delta = {
+            (point.x, point.y): point
+            for point in delta
+        }
+        self.base_factory = base_factory
+
+    def create_point(self, x, y, color=None):
+        if color is not None:
+            return self.base_factory.create_point(x, y, color)
+        elif (x, y) in self.delta:
+            return self.delta[(x, y)]
+        try:
+            return self.canvas.point(x, y)
+        except PointOutOfCanvas:
+            return self.base_factory.create_point(x, y)
 
 
 class Point(object):
     def __init__(self, x, y, color):
         self._x = x
         self._y = y
-        self.color = color
+        self._color = color
 
     @property
     def x(self):
@@ -115,30 +141,58 @@ class Point(object):
     def y(self):
         return self._y
 
+    @property
+    def color(self):
+        return self._color
+
 
 class Painter(object):
-    def __init__(self, canvas):
-        self._canvas = canvas
+    def __init__(self, point_factory):
+        self._point_factory = point_factory
 
-    def draw_line(self, x1, y1, x2, y2, color):
+    def _create_canvas(self, canvas, delta):
+        return Canvas(
+            canvas.width,
+            canvas.height,
+            DeltaPointFactory(canvas, delta, self._point_factory)
+        )
+
+    def draw_line(self, canvas, x1, y1, x2, y2, color):
         """
         Paints the line between (x1, y1) and (x2, y2)
         """
-        for point in self._canvas.line(x1=x1, y1=y1, x2=x2, y2=y2):
-            point.color = color
+        return self._create_canvas(
+            canvas=canvas,
+            delta=[
+                self._point_factory.create_point(point.x, point.y, color)
+                for point in canvas.line(x1=x1, y1=y1, x2=x2, y2=y2)
+            ]
+        )
 
-    def draw_rectangle(self, x1, y1, x2, y2, color):
+    def draw_rectangle(self, canvas, x1, y1, x2, y2, color):
         """
         Paints the border of the rectangle with corners in (x1, y1) and (x2, y2)
         """
-        self.draw_line(x1=x1, y1=y1, x2=x2, y2=y1, color=color)
-        self.draw_line(x1=x1, y1=y2, x2=x2, y2=y2, color=color)
-        self.draw_line(x1=x1, y1=y1, x2=x1, y2=y2, color=color)
-        self.draw_line(x1=x2, y1=y1, x2=x2, y2=y2, color=color)
+        return self._create_canvas(
+            canvas=canvas,
+            delta=[
+                self._point_factory.create_point(point.x, point.y, color)
+                for point in
+                    canvas.line(x1, y1, x2, y1) +
+                    canvas.line(x2, y1, x2, y2) +
+                    canvas.line(x2, y2, x1, y2) +
+                    canvas.line(x1, y2, x1, y1)
+            ]
+        )
 
-    def bucket_fill(self, x, y, color):
+    def bucket_fill(self, canvas, x, y, color):
         """
         Paints the area connected to (x, y)
         """
-        for point in self._canvas.uniform_area(x=x, y=y):
-            point.color = color
+        return self._create_canvas(
+            canvas=canvas,
+            delta=[
+                self._point_factory.create_point(point.x, point.y, color)
+                for point in canvas.uniform_area(x, y)
+            ]
+        )
