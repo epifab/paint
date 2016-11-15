@@ -12,8 +12,8 @@ class Painter(object):
         return EditedCanvas(
             canvas=canvas,
             delta={
-                (x, y): self._point_factory.create_point(x, y, color)
-                for x, y in canvas.line(x1=x1, y1=y1, x2=x2, y2=y2)
+                (p.x, p.y): self._point_factory.create_point(p.x, p.y, color)
+                for p in canvas.line(x1=x1, y1=y1, x2=x2, y2=y2)
             }
         )
 
@@ -24,8 +24,8 @@ class Painter(object):
         return EditedCanvas(
             canvas=canvas,
             delta={
-                (x, y): self._point_factory.create_point(x, y, color)
-                for x, y in canvas.rectangle(x1, y1, x2, y2)
+                (p.x, p.y): self._point_factory.create_point(p.x, p.y, color)
+                for p in canvas.rectangle(x1, y1, x2, y2)
             }
         )
 
@@ -36,8 +36,8 @@ class Painter(object):
         return EditedCanvas(
             canvas=canvas,
             delta={
-                (x, y): self._point_factory.create_point(x, y, color)
-                for x, y in canvas.polygon(*args)
+                (p.x, p.y): self._point_factory.create_point(p.x, p.y, color)
+                for p in canvas.polygon(*args)
             }
         )
 
@@ -48,7 +48,7 @@ class Painter(object):
         return EditedCanvas(
             canvas=canvas,
             delta={
-                (x, y): self._point_factory.create_point(x, y, color)
-                for x, y in canvas.uniform_area(x, y)
+                (p.x, p.y): self._point_factory.create_point(p.x, p.y, color)
+                for p in canvas.uniform_area(x, y)
             }
         )

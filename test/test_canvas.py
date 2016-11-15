@@ -17,29 +17,22 @@ def timer(func):
     return run
 
 
-class CanvasStub(BaseCanvas):
-    def __init__(self, width, height, get_point=lambda x, y: Point("{}-{}".format(x, y))):
-        self._width = width
-        self._height = height
-        self._get_point = get_point
-
-    @property
-    def width(self):
-        return self._width
-
-    @property
-    def height(self):
-        return self._height
-
-    def point(self, x, y):
-        if not self.exists(x, y):
-            raise PointOutOfCanvas
-        return self._get_point(x, y)
+class PointDummyFactory:
+    def create_point(self, x, y):
+        return Point(x, y, None)
 
 
-class PointMock(Point):
-    def set_color(self, color):
-        self._color = color
+class PointColorMatrixFactory(PointDummyFactory):
+    def __init__(self, color_matrix=None):
+        self._color_matrix = color_matrix
+
+    def create_point(self, x, y):
+        return Point(x, y, self._color_matrix[y][x]) if self._color_matrix else Point(x, y, None)
+
+
+class CanvasStub(Canvas):
+    def __init__(self, width, height, factory=PointDummyFactory()):
+        super().__init__(width, height, factory)
 
 
 class CanvasTests(unittest.TestCase):
@@ -89,7 +82,7 @@ class CanvasTests(unittest.TestCase):
             (4, 3),
             (5, 3)
         }
-        self.assertEqual(expected_points, set(canvas.line(x1=2, y1=3, x2=5, y2=3)))
+        self.assertEqual(expected_points, set((point.x, point.y) for point in canvas.line(x1=2, y1=3, x2=5, y2=3)))
 
     def test_horizontal_line_when_out_of_range_throws_exception(self):
         width = 10
@@ -112,13 +105,13 @@ class CanvasTests(unittest.TestCase):
             (3, 4),
             (3, 5)
         }
-        self.assertEqual(expected_points, set(canvas.line(x1=3, y1=2, x2=3, y2=5)))
-        self.assertEqual(expected_points, set(canvas.line(x1=3, y1=5, x2=3, y2=2)))
+        self.assertEqual(expected_points, set((point.x, point.y) for point in canvas.line(x1=3, y1=2, x2=3, y2=5)))
+        self.assertEqual(expected_points, set((point.x, point.y) for point in canvas.line(x1=3, y1=5, x2=3, y2=2)))
 
     def test_line_single_point(self):
         canvas = CanvasStub(10, 8)
         expected_points = {(3, 2)}
-        self.assertEqual(expected_points, set(canvas.line(x1=3, y1=2, x2=3, y2=2)))
+        self.assertEqual(expected_points, set((point.x, point.y) for point in canvas.line(x1=3, y1=2, x2=3, y2=2)))
 
     def test_diagonal_line(self):
         width = 10
@@ -133,8 +126,8 @@ class CanvasTests(unittest.TestCase):
         # 3       x
         # 4
         # 5
-        self.assertEqual({(1, 1), (2, 2), (3, 3)}, set(canvas.line(1, 1, 3, 3)))
-        self.assertEqual({(1, 1), (2, 2), (3, 3)}, set(canvas.line(3, 3, 1, 1)))
+        self.assertEqual({(1, 1), (2, 2), (3, 3)}, set((point.x, point.y) for point in canvas.line(1, 1, 3, 3)))
+        self.assertEqual({(1, 1), (2, 2), (3, 3)}, set((point.x, point.y) for point in canvas.line(3, 3, 1, 1)))
 
         #   0 1 2 3 4 5
         # 0
@@ -143,8 +136,8 @@ class CanvasTests(unittest.TestCase):
         # 3   x
         # 4
         # 5
-        self.assertEqual({(3, 1), (2, 2), (1, 3)}, set(canvas.line(3, 1, 1, 3)))
-        self.assertEqual({(3, 1), (2, 2), (1, 3)}, set(canvas.line(1, 3, 3, 1)))
+        self.assertEqual({(3, 1), (2, 2), (1, 3)}, set((point.x, point.y) for point in canvas.line(3, 1, 1, 3)))
+        self.assertEqual({(3, 1), (2, 2), (1, 3)}, set((point.x, point.y) for point in canvas.line(1, 3, 3, 1)))
 
         #   0 1 2 3 4 5
         # 0
@@ -153,8 +146,8 @@ class CanvasTests(unittest.TestCase):
         # 3     x
         # 4     x
         # 5
-        self.assertEqual({(1, 1), (1, 2), (2, 3), (2, 4)}, set(canvas.line(1, 1, 2, 4)))
-        self.assertEqual({(1, 1), (1, 2), (2, 3), (2, 4)}, set(canvas.line(2, 4, 1, 1)))
+        self.assertEqual({(1, 1), (1, 2), (2, 3), (2, 4)}, set((point.x, point.y) for point in canvas.line(1, 1, 2, 4)))
+        self.assertEqual({(1, 1), (1, 2), (2, 3), (2, 4)}, set((point.x, point.y) for point in canvas.line(2, 4, 1, 1)))
 
         #   0 1 2 3 4 5
         # 0
@@ -163,23 +156,23 @@ class CanvasTests(unittest.TestCase):
         # 3
         # 4
         # 5
-        self.assertEqual({(1, 1), (2, 1), (3, 2), (4, 2)}, set(canvas.line(1, 1, 4, 2)))
-        self.assertEqual({(1, 1), (2, 1), (3, 2), (4, 2)}, set(canvas.line(4, 2, 1, 1)))
+        self.assertEqual({(1, 1), (2, 1), (3, 2), (4, 2)}, set((point.x, point.y) for point in canvas.line(1, 1, 4, 2)))
+        self.assertEqual({(1, 1), (2, 1), (3, 2), (4, 2)}, set((point.x, point.y) for point in canvas.line(4, 2, 1, 1)))
 
     def test_uniform_area_uniform_canvas(self):
-        # ----------
-        # ----------
-        # ----------
-        # ----------
-        # ----------
-        # ----------
         width = 10
         height = 6
 
-        point_mock = Point('-')
-        expected_points = {(x, y) for x in range(width) for y in range(height)}
+        expected_points = {Point(x, y, '-') for x in range(width) for y in range(height)}
 
-        canvas = CanvasStub(width, height, lambda x, y: point_mock)
+        canvas = CanvasStub(width, height, factory=PointColorMatrixFactory([
+            "----------",
+            "----------",
+            "----------",
+            "----------",
+            "----------",
+            "----------",
+        ]))
 
         self.assertSetEqual(expected_points, set(canvas.uniform_area(2, 2)))
 
@@ -189,107 +182,39 @@ class CanvasTests(unittest.TestCase):
         width = 1000
         height = 1000
 
-        point_mock = Point('-')
-        expected_points = {(x, y) for x in range(width) for y in range(height)}
+        canvas = CanvasStub(width, height)
+        area = canvas.uniform_area(2, 2)
 
-        canvas = CanvasStub(width, height, lambda x, y: point_mock)
-
-        self.assertSetEqual(expected_points, set(canvas.uniform_area(2, 2)))
+        self.assertEqual(1000000, len(set(area)))
 
     def test_uniform_area_isolated_point(self):
-        # ----------
-        # ----------
-        # -----X----
-        # ----------
-        # ----------
-        # ----------
-
         width = 10
         height = 6
 
-        point_mocks = [[PointMock('-') for _ in range(height)] for _ in range(width)]
-        point_mocks[3][3].set_color('X')
+        canvas = CanvasStub(width, height, factory=PointColorMatrixFactory([
+            "----------",
+            "----------",
+            "-----X----",
+            "----------",
+            "----------",
+            "----------",
+        ]))
 
-        canvas = CanvasStub(width, height, lambda x, y: point_mocks[x][y])
-
-        expected_points = {
-            (3, 3),
-        }
-        self.assertSetEqual(expected_points, set(canvas.uniform_area(3, 3)))
-
-    def test_uniform_area_vertically_split_canvas(self):
-        # -X--
-        # -X--
-        # -X--
-        # -X--
-
-        width = 4
-        height = 4
-
-        point_mocks = [[PointMock('-') for _ in range(height)] for _ in range(width)]
-        point_mocks[1][0].set_color('X')
-        point_mocks[1][1].set_color('X')
-        point_mocks[1][2].set_color('X')
-        point_mocks[1][3].set_color('X')
-
-        canvas = CanvasStub(width, height, lambda x, y: point_mocks[x][y])
-
-        expected_points = {
-            (0, 0),
-            (0, 1),
-            (0, 2),
-            (0, 3),
-        }
-        self.assertSetEqual(expected_points, set(canvas.uniform_area(0, 0)))
-
-    def test_uniform_area_horizontally_split_canvas(self):
-        # ----
-        # XXXX
-        # ----
-        # ----
-
-        width = 4
-        height = 4
-
-        point_mocks = [[PointMock('-') for _ in range(height)] for _ in range(width)]
-        point_mocks[0][1].set_color('X')
-        point_mocks[1][1].set_color('X')
-        point_mocks[2][1].set_color('X')
-        point_mocks[3][1].set_color('X')
-
-        canvas = CanvasStub(width, height, lambda x, y: point_mocks[x][y])
-
-        expected_points = {
-            (0, 0),
-            (1, 0),
-            (2, 0),
-            (3, 0),
-        }
-        self.assertSetEqual(expected_points, set(canvas.uniform_area(0, 0)))
+        expected_points = {(5, 2),}
+        self.assertSetEqual(expected_points, set((p.x, p.y) for p in canvas.uniform_area(5, 2)))
 
     def test_uniform_area_happy_test(self):
-        # --------X-
-        # --------X-
-        # -----X----
-        # ---XXX----
-        # ----XXXX--
-        # ----------
-
         width = 10
         height = 6
 
-        point_mocks = [[PointMock('-') for _ in range(height)] for _ in range(width)]
-        point_mocks[8][0].set_color('X')
-        point_mocks[8][1].set_color('X')
-        point_mocks[5][2].set_color('X')
-        point_mocks[3][3].set_color('X')
-        point_mocks[4][3].set_color('X')
-        point_mocks[5][3].set_color('X')
-        point_mocks[4][4].set_color('X')
-        point_mocks[5][4].set_color('X')
-        point_mocks[6][4].set_color('X')
-
-        canvas = CanvasStub(width, height, lambda x, y: point_mocks[x][y])
+        canvas = CanvasStub(width, height, factory=PointColorMatrixFactory([
+            "--------X-",
+            "--------X-",
+            "-----X----",
+            "---XXX----",
+            "----XXXX--",
+            "----------",
+        ]))
 
         expected_points = {
             (5, 2),
@@ -299,6 +224,7 @@ class CanvasTests(unittest.TestCase):
             (4, 4),
             (5, 4),
             (6, 4),
+            (7, 4),
         }
-        self.assertSetEqual(expected_points, set(canvas.uniform_area(3, 3)))
+        self.assertSetEqual(expected_points, set((p.x, p.y) for p in canvas.uniform_area(3, 3)))
 

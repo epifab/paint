@@ -32,26 +32,26 @@ class BaseCanvas(object):
     def line(self, x1, y1, x2, y2):
         if x1 == x2 and y1 == y2:
             # Single point
-            yield self.coordinate(x1, y1)
+            yield self.point(x1, y1)
         elif x1 == x2:
             # Vertical line
             for y in self.range(y1, y2):
-                yield self.coordinate(x1, y)
+                yield self.point(x1, y)
         elif y1 == y2:
             # Horizontal line
             for x in self.range(x1, x2):
-                yield self.coordinate(x, y1)
+                yield self.point(x, y1)
         else:
             # Diagonal line
             m = float(y2 - y1) / float(x2 - x1)
             if abs(x2 - x1) > abs(y2 - y1):
                 for x in self.range(x1, x2):
                     y = int(round(float(x - x1) * m)) + y1
-                    yield self.coordinate(x, y)
+                    yield self.point(x, y)
             else:
                 for y in self.range(y1, y2):
                     x = int(round(float(y - y1) / m)) + x1
-                    yield self.coordinate(x, y)
+                    yield self.point(x, y)
 
     def rectangle(self, x1, y1, x2, y2):
         return self.polygon((x1, y1), (x2, y1), (x2, y2), (x1, y2))
@@ -87,8 +87,9 @@ class BaseCanvas(object):
         while stack:
             x1, y1 = stack.pop()
             try:
-                if self.point(x1, y1).color == color:
-                    yield x1, y1
+                point = self.point(x1, y1)
+                if point.color == color:
+                    yield point
 
                     nearby = [
                         (x1 - 1, y1),
