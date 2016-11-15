@@ -1,4 +1,4 @@
-from .paint import *
+from . import *
 
 
 class CommandError(Exception):
