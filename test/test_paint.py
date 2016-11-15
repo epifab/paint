@@ -87,23 +87,20 @@ class CanvasTests(unittest.TestCase):
             (4, 3),
             (5, 3)
         }
-        self.assertEqual(expected_points, canvas.horizontal_line(x=2, xx=5, y=3))
-
-    def test_horizontal_line_single_point(self):
-        canvas = CanvasTests.CanvasStub(10, 8)
-        expected_points = {(2, 3)}
-        self.assertEqual(expected_points, canvas.horizontal_line(x=2, xx=2, y=3))
+        self.assertEqual(expected_points, set(canvas.line(x1=2, y1=3, x2=5, y2=3)))
 
     def test_horizontal_line_when_out_of_range_throws_exception(self):
         width = 10
         height = 8
         canvas = CanvasTests.CanvasStub(width, height)
-        self.assertRaises(PointOutOfCanvas, canvas.horizontal_line, x=-1, y=3, xx=4)
-        self.assertRaises(PointOutOfCanvas, canvas.horizontal_line, x=width, y=3, xx=4)
-        self.assertRaises(PointOutOfCanvas, canvas.horizontal_line, x=2, y=3, xx=-1)
-        self.assertRaises(PointOutOfCanvas, canvas.horizontal_line, x=2, y=3, xx=width)
-        self.assertRaises(PointOutOfCanvas, canvas.horizontal_line, x=2, y=-1, xx=2)
-        self.assertRaises(PointOutOfCanvas, canvas.horizontal_line, x=2, y=height, xx=2)
+        line = canvas.line(x1=-1, y1=2, x2=4, y2=3)
+        self.assertRaises(PointOutOfCanvas, set, line)
+        line = canvas.line(x1=width, y1=2, x2=4, y2=3)
+        self.assertRaises(PointOutOfCanvas, set, line)
+        line = canvas.line(x1=2, y1=-1, x2=4, y2=3)
+        self.assertRaises(PointOutOfCanvas, set, line)
+        line = canvas.line(x1=2, y1=height, x2=4, y2=3)
+        self.assertRaises(PointOutOfCanvas, set, line)
 
     def test_vertical_line(self):
         canvas = CanvasTests.CanvasStub(10, 8)
@@ -113,23 +110,59 @@ class CanvasTests(unittest.TestCase):
             (3, 4),
             (3, 5)
         }
-        self.assertEqual(expected_points, canvas.vertical_line(x=3, y=2, yy=5))
+        self.assertEqual(expected_points, set(canvas.line(x1=3, y1=2, x2=3, y2=5)))
+        self.assertEqual(expected_points, set(canvas.line(x1=3, y1=5, x2=3, y2=2)))
 
-    def test_vertical_line_single_point(self):
+    def test_line_single_point(self):
         canvas = CanvasTests.CanvasStub(10, 8)
         expected_points = {(3, 2)}
-        self.assertEqual(expected_points, canvas.vertical_line(x=3, y=2, yy=2))
+        self.assertEqual(expected_points, set(canvas.line(x1=3, y1=2, x2=3, y2=2)))
 
-    def test_vertical_line_when_out_of_range_throws_exception(self):
+    def test_diagonal_line(self):
         width = 10
-        height = 8
+        height = 10
+
         canvas = CanvasTests.CanvasStub(width, height)
-        self.assertRaises(PointOutOfCanvas, canvas.vertical_line, -1, 2, 4)
-        self.assertRaises(PointOutOfCanvas, canvas.vertical_line, width, 2, 4)
-        self.assertRaises(PointOutOfCanvas, canvas.vertical_line, 4, -1, 4)
-        self.assertRaises(PointOutOfCanvas, canvas.vertical_line, 4, height, 4)
-        self.assertRaises(PointOutOfCanvas, canvas.vertical_line, 4, 2, -1)
-        self.assertRaises(PointOutOfCanvas, canvas.vertical_line, 4, 2, height)
+
+        #   0 1 2 3 4 5
+        # 0
+        # 1   x
+        # 2     x
+        # 3       x
+        # 4
+        # 5
+        self.assertEqual({(1, 1), (2, 2), (3, 3)}, set(canvas.line(1, 1, 3, 3)))
+        self.assertEqual({(1, 1), (2, 2), (3, 3)}, set(canvas.line(3, 3, 1, 1)))
+
+        #   0 1 2 3 4 5
+        # 0
+        # 1       x
+        # 2     x
+        # 3   x
+        # 4
+        # 5
+        self.assertEqual({(3, 1), (2, 2), (1, 3)}, set(canvas.line(3, 1, 1, 3)))
+        self.assertEqual({(3, 1), (2, 2), (1, 3)}, set(canvas.line(1, 3, 3, 1)))
+
+        #   0 1 2 3 4 5
+        # 0
+        # 1   x
+        # 2   x
+        # 3     x
+        # 4     x
+        # 5
+        self.assertEqual({(1, 1), (1, 2), (2, 3), (2, 4)}, set(canvas.line(1, 1, 2, 4)))
+        self.assertEqual({(1, 1), (1, 2), (2, 3), (2, 4)}, set(canvas.line(2, 4, 1, 1)))
+
+        #   0 1 2 3 4 5
+        # 0
+        # 1   x x
+        # 2       x x
+        # 3
+        # 4
+        # 5
+        self.assertEqual({(1, 1), (2, 1), (3, 2), (4, 2)}, set(canvas.line(1, 1, 4, 2)))
+        self.assertEqual({(1, 1), (2, 1), (3, 2), (4, 2)}, set(canvas.line(4, 2, 1, 1)))
 
     def test_uniform_area_uniform_canvas(self):
         # ----------
@@ -146,7 +179,7 @@ class CanvasTests(unittest.TestCase):
 
         canvas = CanvasTests.CanvasStub(width, height, lambda x, y: point_mock)
 
-        self.assertSetEqual(expected_points, canvas.uniform_area(2, 2))
+        self.assertSetEqual(expected_points, set(canvas.uniform_area(2, 2)))
 
     @timer
     def test_uniform_area_large_canvas(self):
@@ -159,7 +192,7 @@ class CanvasTests(unittest.TestCase):
 
         canvas = CanvasTests.CanvasStub(width, height, lambda x, y: point_mock)
 
-        self.assertSetEqual(expected_points, canvas.uniform_area(2, 2))
+        self.assertSetEqual(expected_points, set(canvas.uniform_area(2, 2)))
 
     def test_uniform_area_isolated_point(self):
         # ----------
@@ -180,7 +213,7 @@ class CanvasTests(unittest.TestCase):
         expected_points = {
             (3, 3),
         }
-        self.assertSetEqual(expected_points, canvas.uniform_area(3, 3))
+        self.assertSetEqual(expected_points, set(canvas.uniform_area(3, 3)))
 
     def test_uniform_area_vertically_split_canvas(self):
         # -X--
@@ -205,7 +238,7 @@ class CanvasTests(unittest.TestCase):
             (0, 2),
             (0, 3),
         }
-        self.assertSetEqual(expected_points, canvas.uniform_area(0, 0))
+        self.assertSetEqual(expected_points, set(canvas.uniform_area(0, 0)))
 
     def test_uniform_area_horizontally_split_canvas(self):
         # ----
@@ -230,7 +263,7 @@ class CanvasTests(unittest.TestCase):
             (2, 0),
             (3, 0),
         }
-        self.assertSetEqual(expected_points, canvas.uniform_area(0, 0))
+        self.assertSetEqual(expected_points, set(canvas.uniform_area(0, 0)))
 
     def test_uniform_area_happy_test(self):
         # --------X-
@@ -265,26 +298,7 @@ class CanvasTests(unittest.TestCase):
             (5, 4),
             (6, 4),
         }
-        self.assertSetEqual(expected_points, canvas.uniform_area(3, 3))
-
-    def test_uniform_area_out_of_range_throws_exception(self):
-        width = 10
-        height = 6
-
-        canvas = CanvasTests.CanvasStub(width, height)
-
-        self.assertRaises(PointOutOfCanvas, canvas.uniform_area, -1, 3)
-        self.assertRaises(PointOutOfCanvas, canvas.uniform_area, width, 3)
-        self.assertRaises(PointOutOfCanvas, canvas.uniform_area, 2, -1)
-        self.assertRaises(PointOutOfCanvas, canvas.uniform_area, 2, height)
-
-    def test_line(self):
-        width = 10
-        height = 10
-
-        canvas = CanvasTests.CanvasStub(width, height)
-
-        self.assertEqual({(1, 1), (2, 2), (3, 3)}, canvas.line(1, 1, 3, 3))
+        self.assertSetEqual(expected_points, set(canvas.uniform_area(3, 3)))
 
 
 class PainterTests(unittest.TestCase):
@@ -321,23 +335,17 @@ class PainterTests(unittest.TestCase):
             "  XXX ",
         ]
 
-        def line_mock(x1, y1, x2, y2):
-            if (x1, y1) == (2, 0) and (x2, y2) == (4, 0):
-                return {(2, 0), (3, 0), (4, 0)}
-            elif (x1, y1) == (4, 0) and (x2, y2) == (4, 2):
-                return {(4, 0), (4, 1), (4, 2)}
-            elif (x1, y1) == (4, 2) and (x2, y2) == (2, 2):
-                return {(4, 2), (3, 2), (2, 2)}
-            elif (x1, y1) == (2, 2) and (x2, y2) == (2, 0):
-                return {(2, 2), (2, 1), (2, 0)}
+        def rectangle_mock(x1, y1, x2, y2):
+            if (x1, y1) == (2, 0) and (x2, y2) == (4, 2):
+                return {(2, 0), (3, 0), (4, 0), (4, 1), (4, 2), (3, 2), (2, 2), (2, 1)}
             else:
-                raise Exception("Painter shouldn't need to get any other line")
+                raise Exception("Painter shouldn't need to get any other rectangle")
 
         canvas_mock = mock.Mock()
         canvas_mock.width = 6
         canvas_mock.height = 3
         canvas_mock.point.side_effect = lambda x, y: Point(' ')
-        canvas_mock.line.side_effect = line_mock
+        canvas_mock.rectangle.side_effect = rectangle_mock
 
         painter = Painter(PointFactory('-'))
         canvas = painter.draw_rectangle(canvas_mock, x1=2, y1=0, x2=4, y2=2, color='X')

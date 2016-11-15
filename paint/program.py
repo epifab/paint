@@ -1,4 +1,4 @@
-from paint import *
+from .paint import *
 
 
 class CommandError(Exception):
@@ -167,6 +167,17 @@ class RectangleCommand(PainterCommand):
         return self.painter.draw_rectangle(canvas, x1=x1, y1=y1, x2=x2, y2=y2, color=self.state.foreground_color)
 
 
+class TriangleCommand(PainterCommand):
+    def paint(self, canvas):
+        x1 = self.get_x_parameter(1, "x1")
+        y1 = self.get_y_parameter(2, "y1")
+        x2 = self.get_x_parameter(3, "x2")
+        y2 = self.get_y_parameter(4, "y2")
+        x3 = self.get_x_parameter(5, "x3")
+        y3 = self.get_y_parameter(6, "y3")
+        return self.painter.draw_polygon(canvas, self.state.foreground_color, (x1, y1), (x2, y2), (x3, y3))
+
+
 class UndoCommand(Command):
     def execute(self):
         try:
@@ -196,6 +207,7 @@ class Program(object):
             'C': CanvasCommand,
             'L': LineCommand,
             'R': RectangleCommand,
+            'T': TriangleCommand,
             'B': BucketFillCommand,
             'Z': UndoCommand,
             'Y': RedoCommand,

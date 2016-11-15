@@ -49,10 +49,17 @@ class ProgramTests(unittest.TestCase):
             "----------------------"
         expected_canvas5 = \
             "----------------------\n" \
-            "|oooooooooooooooxxxxx|\n" \
-            "|xxxxxxooooooooox   x|\n" \
-            "|     xoooooooooxxxxx|\n" \
-            "|     xoooooooooooooo|\n" \
+            "|          x    xxxxx|\n" \
+            "|xxxxxx   x x   x   x|\n" \
+            "|     x  x   x  xxxxx|\n" \
+            "|     x xxxxxxx      |\n" \
+            "----------------------"
+        expected_canvas6 = \
+            "----------------------\n" \
+            "|          x    xxxxx|\n" \
+            "|xxxxxx   xox   x   x|\n" \
+            "|     x  xooox  xxxxx|\n" \
+            "|     x xxxxxxx      |\n" \
             "----------------------"
 
         program.run_command("C", 20, 4)
@@ -67,7 +74,13 @@ class ProgramTests(unittest.TestCase):
         program.run_command("R", 16, 1, 20, 3)
         self.assertEqual(printer_mock.printed_canvas, expected_canvas4)
 
+        program.run_command("T", 11, 1, 8, 4, 14, 4)
+        self.assertEqual(printer_mock.printed_canvas, expected_canvas5)
+
         program.run_command("B", 10, 3, "o")
+        self.assertEqual(printer_mock.printed_canvas, expected_canvas6)
+
+        program.run_command("Z")
         self.assertEqual(printer_mock.printed_canvas, expected_canvas5)
 
         program.run_command("Z")

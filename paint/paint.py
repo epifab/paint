@@ -15,80 +15,100 @@ class BaseCanvas(object):
         raise NotImplementedError
 
     def exists(self, x, y):
-        return 0 <= x < self.width and 0 <= y < self.height
+        return 0 <= int(x) < self.width and 0 <= int(y) < self.height
 
-    def _point_coordinate(self, x, y):
+    def coordinate(self, x, y):
         if not self.exists(x, y):
             raise PointOutOfCanvas
         return x, y
 
-    def horizontal_line(self, x, y, xx):
-        """
-        Returns the list of points between (x1, y) and (x2, y)
-        """
-        if x > xx:
-            x, xx = xx, x
-        return {self._point_coordinate(x, y) for x in (range(x, xx + 1))}
-
-    def vertical_line(self, x, y, yy):
-        """
-        Returns the list of points between (x, y1) and (x, y2)
-        """
-        if y > yy:
-            y, yy = yy, y
-        return {self._point_coordinate(x, y) for y in (range(y, yy + 1))}
+    def range(self, a, b):
+        step = 1 if a < b else -1
+        while a != b:
+            yield a
+            a += step
+        yield b
 
     def line(self, x1, y1, x2, y2):
         if x1 == x2 and y1 == y2:
-            return {self._point_coordinate(x1, y1)}
+            # Single point
+            yield self.coordinate(x1, y1)
         elif x1 == x2:
-            return self.vertical_line(x=x1, y=y1, yy=y2)
+            # Vertical line
+            for y in self.range(y1, y2):
+                yield self.coordinate(x1, y)
         elif y1 == y2:
-            return self.horizontal_line(x=x1, y=y1, xx=x2)
+            # Horizontal line
+            for x in self.range(x1, x2):
+                yield self.coordinate(x, y1)
+        else:
+            # Diagonal line
+            m = float(y2 - y1) / float(x2 - x1)
+            if abs(x2 - x1) > abs(y2 - y1):
+                for x in self.range(x1, x2):
+                    y = int(round(float(x - x1) * m)) + y1
+                    yield self.coordinate(x, y)
+            else:
+                for y in self.range(y1, y2):
+                    x = int(round(float(y - y1) / m)) + x1
+                    yield self.coordinate(x, y)
 
-        if x1 > x2:
-            x1, x2 = x2, x1
-            y1, y2 = y2, y1
+    def rectangle(self, x1, y1, x2, y2):
+        return self.polygon((x1, y1), (x2, y1), (x2, y2), (x1, y2))
 
-        m = float(y2 - y1) / float(x2 - x1)
-        return {
-            self._point_coordinate(x, int(round((m * (x - x1)) + y1)))
-            for x in range(x1, x2 + 1)
-        }
+    def triangle(self, x1, y1, x2, y2, x3, y3):
+        return self.polygon((x1, y1), (x2, y2), (x3, y3))
+
+    def polygon(self, *args):
+        assert len(args) >= 3, "A polygon is made of at least 3 points"
+
+        points = iter(args)
+
+        first_point = next(points)
+
+        p1 = first_point
+
+        for p2 in points:
+            for p in self.line(p1[0], p1[1], p2[0], p2[1]):
+                yield p
+            p1 = p2
+
+        for p in self.line(p1[0], p1[1], first_point[0], first_point[1]):
+            yield p
 
     def uniform_area(self, x, y):
         """
         Returns the set of points of the area connected to (x, y)
         """
-        def loop(color, stack, visited, linked):
-            while stack:
-                x1, y1 = stack.pop()
-                try:
-                    if self.point(x1, y1).color == color:
-                        linked.add((x1, y1))
-                        nearby = [
-                            (x1 - 1, y1),
-                            (x1 + 1, y1),
-                            (x1, y1 - 1),
-                            (x1, y1 + 1)
-                        ]
+        color = self.point(x, y).color
+        stack = {(x, y)}
+        visited = set()
 
-                        for p2 in nearby:
-                            if p2 not in visited:
-                                visited.add(p2)
-                                stack.add(p2)
-                except PointOutOfCanvas:
-                    pass
+        while stack:
+            x1, y1 = stack.pop()
+            try:
+                if self.point(x1, y1).color == color:
+                    yield x1, y1
 
-            return linked
+                    nearby = [
+                        (x1 - 1, y1),
+                        (x1 + 1, y1),
+                        (x1, y1 - 1),
+                        (x1, y1 + 1)
+                    ]
 
-        return loop(self.point(x, y).color, {(x, y)}, set(), set())
+                    for p2 in nearby:
+                        if p2 not in visited:
+                            visited.add(p2)
+                            stack.add(p2)
+
+            except PointOutOfCanvas:
+                pass
 
 
 class Canvas(BaseCanvas):
     def __init__(self, width, height, point_factory):
-        assert(width > 0)
-        assert(height > 0)
+        assert width > 0 and height > 0, "Invalid width or height"
         self._width = width
         self._height = height
         self._matrix = [[point_factory.create_point(x, y) for y in range(height)] for x in range(width)]
@@ -178,11 +198,19 @@ class Painter(object):
             canvas=canvas,
             delta={
                 (x, y): self._point_factory.create_point(x, y, color)
-                for x, y in
-                    canvas.line(x1, y1, x2, y1) |
-                    canvas.line(x2, y1, x2, y2) |
-                    canvas.line(x2, y2, x1, y2) |
-                    canvas.line(x1, y2, x1, y1)
+                for x, y in canvas.rectangle(x1, y1, x2, y2)
+            }
+        )
+
+    def draw_polygon(self, canvas, color, *args):
+        """
+        Draws a polygon
+        """
+        return EditedCanvas(
+            canvas=canvas,
+            delta={
+                (x, y): self._point_factory.create_point(x, y, color)
+                for x, y in canvas.polygon(*args)
             }
         )
 
